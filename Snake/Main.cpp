@@ -7,6 +7,7 @@
 #define MAX_SNAKE 500 //蛇的最大节数
 #define WIN_WIDTH 640
 #define WIN_HEIGHT 480
+int COUNT = 0;
 
 using namespace std;
 
@@ -24,6 +25,14 @@ struct Food
 	DWORD color;
 	bool flag; //是否被吃掉，是否需要重新生成
 }food;
+struct BigFood
+{
+	int x;
+	int y;
+	DWORD color;
+	bool flag; //是否存在
+}bigFood;
+
 struct Pos
 {
 	int x;
@@ -63,11 +72,23 @@ void gameInit()
 	snake.coor[2].y = 0;
 	snake.coor[2].color = RGB(rand() % 256, rand() % 256, rand() % 256);
 
+	
 	//初始化食物
 	food.x = rand() % (WIN_WIDTH / 10) * 10;
 	food.y = rand() % (WIN_HEIGHT / 10) * 10;
 	food.color = RGB(rand() % 256, rand() % 256, rand() % 256);
 	food.flag = true;
+
+	do
+	{
+		bigFood.x = rand() % (WIN_WIDTH / 10) * 10;
+		bigFood.y = rand() % (WIN_HEIGHT / 10) * 10;
+	} while (bigFood.x == food.x && bigFood.y == food.y);
+	bigFood.flag = false;
+	if (rand() % 5 < 1)
+	{
+		bigFood.flag = true;
+	}
 }
 
 void gameDraw()
@@ -85,13 +106,18 @@ void gameDraw()
 	}
 
 	//绘制食物
-	if (food.flag == true)
+	if (food.flag)
 	{
 		setfillcolor(food.color);
 		solidellipse(food.x, food.y, food.x + 10, food.y + 10);
 
 	}
 
+	if (bigFood.flag)
+	{
+		setfillcolor(bigFood.color);
+		solidellipse(bigFood.x, bigFood.y, bigFood.x + 20, bigFood.y + 20);
+	}
 	//绘制分数
 	char score[20];
 	sprintf_s(score, "分数： %d", snake.num);
@@ -138,24 +164,28 @@ void gameCtrl()
 	switch (key)
 	{
 	case 72:
+	case 'w':
 		if (snake.dir != DOWN)
 		{
 			snake.dir = UP;
 		}
 		break;
 	case 80:
+	case 's':
 		if (snake.dir != UP)
 		{
 			snake.dir = DOWN;
 		}
 		break;
 	case 75:
+	case 'a':
 		if (snake.dir != RIGHT)
 		{
 			snake.dir = LEFT;
 		}
 		break;
 	case 77:
+	case 'd':
 		if (snake.dir != LEFT)
 		{
 			snake.dir = RIGHT;
@@ -173,18 +203,56 @@ void creatFood()
 	if (!food.flag)
 	{
 		//初始化食物
-		food.x = rand() % (WIN_WIDTH / 10) * 10;
-		food.y = rand() % (WIN_HEIGHT / 10) * 10;
+		do
+		{
+			food.x = rand() % (WIN_WIDTH / 10) * 10;
+		} while (food.x < 20 || food.x > WIN_WIDTH - 20);
+		do
+		{
+			food.y = rand() % (WIN_HEIGHT / 10) * 10;
+		} while (food.y < 20 || food.y > WIN_HEIGHT - 20);
 		food.color = RGB(rand() % 256, rand() % 256, rand() % 256);
 		food.flag = true;
+		COUNT = 0;
+		
+		do
+		{
+			bigFood.x = rand() % (WIN_WIDTH / 10) * 10;
+			bigFood.y = rand() % (WIN_HEIGHT / 10) * 10;
+		} while (bigFood.x == food.x && bigFood.y == food.y);
+		bigFood.color = RGB(rand() % 256, rand() % 256, rand() % 256);
+		bigFood.flag = false;
+		if (rand() % 5 < 1)
+		{
+			bigFood.flag = true;
+
+		}
+		
 	}
+
 }
+
+
 void eatFood()
 {
 	if (food.flag == true && snake.coor[0].x == food.x && snake.coor[0].y == food.y)
 	{
 		food.flag = false;
 		snake.coor[snake.num++].color = food.color;
+		creatFood();
+	}
+}
+
+void eatBigFood()
+{
+	if (bigFood.flag == true && ((snake.coor[0].x == bigFood.x && snake.coor[0].y == bigFood.y) || (snake.coor[0].x == bigFood.x + 10 && snake.coor[0].y == bigFood.y + 10)))
+	{
+		bigFood.flag = false;
+		snake.num += 3;
+		for (int i = 2; i >= 0; i--)
+		{
+			snake.coor[snake.num - i].color = bigFood.color;
+		}
 		creatFood();
 	}
 }
@@ -198,7 +266,7 @@ void fail()
 		gameInit();
 		break;
 	case IDNO:
-		exit(0);
+		exit(EXIT_SUCCESS);
 		break;
 	default:
 		break;
@@ -210,6 +278,17 @@ void gameFail()
 	{
 		fail();
 	}
+	if (snake.num > 4)
+	{
+		for (int i = snake.num; i > 3; i--)
+		{
+			if (snake.coor[i].x == snake.coor[0].x && snake.coor[i].y == snake.coor[0].y)
+			{
+				fail();
+			}
+		}
+	}
+	
 }
 int main()
 {
@@ -228,6 +307,13 @@ int main()
 
 		}
 		eatFood();
+		eatBigFood();
+		
+		if (bigFood.flag && COUNT++ == 100)
+		{
+			COUNT = 0;
+			bigFood.flag = false;
+		}
 		gameFail();
 		Sleep(100);
 	}
