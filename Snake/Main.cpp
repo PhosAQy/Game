@@ -274,7 +274,7 @@ void fail()
 }
 void gameFail()
 {
-	if (snake.coor[0].x < 0 || snake.coor[0].x > WIN_WIDTH || snake.coor[0].y < 0 || snake.coor[0].y > WIN_HEIGHT)
+	if (snake.coor[0].x < 0 || snake.coor[0].x > WIN_WIDTH - 10 || snake.coor[0].y < 0 || snake.coor[0].y > WIN_HEIGHT - 10)
 	{
 		fail();
 	}
